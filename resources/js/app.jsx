@@ -7,16 +7,39 @@ import Dashboard from './pages/Dashboard';
 import ProductManagement from './pages/ProductManagement';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import Sales from './pages/Sales';
 import '../css/app.css';
+import Register from './pages/Register';
 
 function App() {
     const [isLoggedIn, setIsLoggedIn] = React.useState(
         !!localStorage.getItem('auth_token')
     );
-
-    const [currentPage, setCurrentPage] = React.useState('dashboard');
+    
+    const [currentPage, setCurrentPage] = React.useState(() => {
+    return localStorage.getItem('freshstock_current_page') || 'dashboard';
+        });
+    React.useEffect(() => {
+    if (isLoggedIn) {
+        localStorage.setItem('freshstock_current_page', currentPage);
+        }
+    }, [currentPage, isLoggedIn]);    
     const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+    
+    const [authMode, setAuthMode] = React.useState('login');
 
+if (!isLoggedIn) {
+    return authMode === 'register' ? (
+        <Register
+            onBackToLogin={() => setAuthMode('login')}
+        />
+    ) : (
+        <Login
+            onLogin={handleLogin}
+            onRegister={() => setAuthMode('register')}
+        />
+    );
+}
     const user = React.useMemo(() => {
         try {
             return JSON.parse(localStorage.getItem('auth_user') || 'null');
@@ -30,27 +53,36 @@ function App() {
         setCurrentPage('dashboard');
     }
 
+
     async function handleLogout() {
         const token = localStorage.getItem('auth_token');
 
+        
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('freshstock_current_page');
+
+        setIsLoggedIn(false);
+        setCurrentPage('dashboard');
+        setMobileMenuOpen(false);
+
         try {
-            await fetch('/api/logout', {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            if (token) {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+            }
         } catch (error) {
             console.error('Logout request failed:', error);
-        } finally {
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('auth_user');
-            setIsLoggedIn(false);
-            setCurrentPage('dashboard');
-            setMobileMenuOpen(false);
         }
     }
+
+
+    
 
     if (!isLoggedIn) {
         return <Login onLogin={handleLogin} />;
@@ -81,6 +113,9 @@ function App() {
 
                     {currentPage === 'products' && (
                         <ProductManagement />
+                    )}
+                    {currentPage === 'sales' && (
+                        <Sales />
                     )}
                 </main>
             </div>

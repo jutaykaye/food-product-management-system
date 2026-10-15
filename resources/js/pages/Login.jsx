@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 
-export default function Login({ onLogin })  {
+export default function Login({ onLogin, onRegister })  {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -37,8 +37,7 @@ export default function Login({ onLogin })  {
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem(
             'auth_user',
-            JSON.stringify(data.user)
-        );
+            JSON.stringify(data.user));
 
         onLogin();
     } catch (error) {
@@ -94,6 +93,12 @@ export default function Login({ onLogin })  {
                 >
                     {loading ? 'Logging in...' : 'Login'}
                 </button>
+                <p className="auth-switch">
+    Don't have an account?{' '}
+    <button type="button" onClick={onRegister}>
+        Register
+    </button>
+</p>
             </form>
         </div>
     );

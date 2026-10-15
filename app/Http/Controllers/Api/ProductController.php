@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Models\ActivityLog;
 
 class ProductController extends Controller
 {
@@ -40,6 +41,22 @@ public function store(Request $request)
     ]);
 
     $product = Product::create($validated);
+    ActivityLog::create([
+    'user_id' => $request->user()?->id,
+    'action' => 'product_created',
+    'entity_type' => 'product',
+    'entity_id' => $product->id,
+    'entity_name' => $product->name,
+    'details' => 'Product created.',
+    'old_values' => null,
+    'new_values' => $product->only([
+        'name',
+        'description',
+        'category',
+        'price',
+        'stock_quantity',
+    ]),
+]);
 
     return response()->json([
         'message' => 'Product created successfully!',
@@ -58,7 +75,33 @@ public function update(Request $request, Product $product)
         'stock_quantity' => 'sometimes|required|integer|min:0',
     ]);
 
+    $oldValues = $product->only([
+    'name',
+    'description',
+    'category',
+    'price',
+    'stock_quantity',
+]);
     $product->update($validated);
+    $product->refresh();
+
+ActivityLog::create([
+    'user_id' => $request->user()?->id,
+    'action' => 'product_updated',
+    'entity_type' => 'product',
+    'entity_id' => $product->id,
+    'entity_name' => $product->name,
+    'details' => 'Product details updated.',
+    'old_values' => $oldValues,
+    'new_values' => $product->only([
+        'name',
+        'description',
+        'category',
+        'price',
+        'stock_quantity',
+    ]),
+]);
+
 
     return response()->json([
         'message' => 'Product updated successfully!',
@@ -73,7 +116,31 @@ public function destroy(Product $product)
     return response()->json([
         'message' => 'Product deleted successfully!',
     ], 200);
-}
 
+    $oldValues = $product->only([
+        'name',
+        'description',
+        'category',
+        'price',
+        'stock_quantity',
+    ]);
+
+    $product->delete();
+
+    ActivityLog::create([
+        'user_id' => request()->user()?->id,
+        'action' => 'product_deleted',
+        'entity_type' => 'product',
+        'entity_id' => $product->id,
+        'entity_name' => $product->name,
+        'details' => 'Product deleted.',
+        'old_values' => $oldValues,
+        'new_values' => null,
+    ]);
+
+    return response()->json([
+        'message' => 'Product deleted successfully!',
+    ], 200);
+}
 
 }

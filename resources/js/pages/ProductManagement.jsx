@@ -30,17 +30,95 @@ function ProductManagement() {
     const [error, setError] = useState('');
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
+    const [stockProduct, setStockProduct] = useState(null);
+    const [stockQuantity, setStockQuantity] = useState('');
+    const [stockNotes, setStockNotes] = useState('');
+    const [addingStock, setAddingStock] = useState(false);
+    const [showProductForm, setShowProductForm] = useState(false);
+    const [activityLogs, setActivityLogs] = React.useState({
+            data: [],
+            current_page: 1,
+            last_page: 1,
+        });
+
+    const [activitySearch, setActivitySearch] = React.useState('');
+    const [activityAction, setActivityAction] = React.useState('');
+    const [activityLoading, setActivityLoading] = React.useState(false);
+    const [activityError, setActivityError] = React.useState('');
 
     const token = localStorage.getItem('auth_token');
 
+    
+function formatActivityChanges(log) {
+    const oldValues = log.old_values || {};
+    const newValues = log.new_values || {};
+    const changes = [];
+
+    const labels = {
+        name: 'Edit Product Name',
+        price: 'Edit Price',
+        description: 'Edit Description',
+        category: 'Edit Category',
+        stock_quantity: 'Edit Stock',
+        quantity_added: 'Add Stock',
+        quantity_sold: 'Quantity Sold',
+        unit_price: 'Unit Price',
+        total_amount: 'Total Revenue',
+    };
+
+    const fields = [
+        ...new Set([
+            ...Object.keys(oldValues),
+            ...Object.keys(newValues),
+        ]),
+    ];
+
+    for (const field of fields) {
+        const oldValue = oldValues[field];
+        const newValue = newValues[field];
+
+        if (oldValue === undefined && newValue === undefined) continue;
+        if (JSON.stringify(oldValue) === JSON.stringify(newValue)) continue;
+
+        if (field === 'quantity_added') {
+            changes.push(`Add Stock: +${newValue} units`);
+        } else if (field === 'quantity_sold') {
+            changes.push(`Quantity Sold: ${newValue} units`);
+        } else if (field === 'price' || field === 'unit_price') {
+            changes.push(
+                `${labels[field]}: ₱${Number(oldValue ?? 0).toFixed(2)} → ₱${Number(newValue ?? 0).toFixed(2)}`
+            );
+        } else if (oldValue !== undefined && newValue !== undefined) {
+            changes.push(
+                `${labels[field] || field}: ${oldValue ?? '—'} → ${newValue ?? '—'}`
+            );
+        } else {
+            changes.push(
+                `${labels[field] || field}: ${newValue ?? oldValue ?? '—'}`
+            );
+        }
+    }
+
+    if (log.details && changes.length === 0) {
+        changes.push(log.details);
+    }
+
+    return changes;
+}
+
+
     async function apiRequest(url, options = {}) {
+        const token = localStorage.getItem('auth_token');
+
         const response = await fetch(url, {
             ...options,
             headers: {
                 Accept: 'application/json',
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-                ...options.headers,
+                ...(options.headers || {}),
+                ...(token
+                    ? { Authorization: `Bearer ${token}` }
+                    : {}),
+                ...(options.body ? { 'Content-Type': 'application/json' } : {}),
             },
         });
 
@@ -64,6 +142,39 @@ function ProductManagement() {
 
         return data;
     }
+
+    useEffect(() => {
+        async function loadActivityLogs() {
+            setActivityLoading(true);
+            setActivityError('');
+
+            try {
+                const params = new URLSearchParams();
+
+                if (activitySearch.trim()) {
+                    params.set('search', activitySearch.trim());
+                }
+
+                if (activityAction) {
+                    params.set('action', activityAction);
+                }
+
+                const query = params.toString();
+                const endpoint = `/api/activity-logs${query ? `?${query}` : ''}`;
+
+                const data = await apiRequest(endpoint);
+                setActivityLogs(data);
+            } catch (err) {
+                setActivityError(
+                    err.message || 'Unable to load activity history.'
+                );
+            } finally {
+                setActivityLoading(false);
+            }
+        }
+
+        loadActivityLogs();
+    }, [activitySearch, activityAction]);
 
     async function loadProducts() {
         setLoading(true);
@@ -119,9 +230,10 @@ function ProductManagement() {
                     : 'Product added successfully!')
             );
 
-            setForm({ ...emptyForm });
-            setEditingId(null);
-            await loadProducts();
+           setForm({ ...emptyForm });
+           setEditingId(null);
+           setShowProductForm(false);
+           await loadProducts();
         } catch (err) {
             setError(err.message);
         } finally {
@@ -141,6 +253,7 @@ function ProductManagement() {
 
         setMessage('');
         setError('');
+        setShowProductForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -166,9 +279,53 @@ function ProductManagement() {
         }
     }
 
+
+async function handleAddStock(e) {
+    e.preventDefault();
+    if (!stockProduct) return;
+
+    setMessage('');
+    setError('');
+    setAddingStock(true);
+
+    try {
+        const data = await apiRequest(
+            `/api/products/${stockProduct.id}/add-stock`,
+            {
+                method: 'POST',
+                body: JSON.stringify({
+                    quantity: Number(stockQuantity),
+                    notes: stockNotes.trim() || 'Stock added',
+                }),
+            }
+        );
+
+        setMessage(data.message || 'Stock added successfully!');
+        setStockProduct(null);
+        setStockQuantity('');
+        setStockNotes('');
+
+        await loadProducts();
+    } catch (err) {
+        setError(err.message || 'Unable to add stock.');
+    } finally {
+        setAddingStock(false);
+    }
+}
+
+function openAddStock(product) {
+    setStockProduct(product);
+    setStockQuantity('');
+    setStockNotes('');
+    setMessage('');
+    setError('');
+}
+
+    
     function cancelEdit() {
         setEditingId(null);
         setForm({ ...emptyForm });
+        setShowProductForm(false);
         setMessage('');
         setError('');
     }
@@ -198,6 +355,19 @@ function ProductManagement() {
                     <span className="product-eyebrow">INVENTORY</span>
                     <h1>Product Management</h1>
                     <p>Manage your food products, prices, and stock.</p>
+                    <button
+    type="button"
+    className="product-btn product-btn-primary"
+    onClick={() => {
+        setForm({ ...emptyForm });
+        setEditingId(null);
+        setMessage('');
+        setError('');
+        setShowProductForm(true);
+    }}
+>
+    + Add Product
+</button> 
                 </div>
 
                 <div className="product-heading-count">
@@ -268,123 +438,187 @@ function ProductManagement() {
                 </article>
             </section>
 
-            <section className="product-form-panel">
-                <div className="product-section-heading">
-                    <div className="product-section-icon">＋</div>
-                    <div>
-                        <h2>{editingId ? 'Edit Product' : 'Add New Product'}</h2>
-                        <p>
-                            {editingId
-                                ? 'Update the details of this product.'
-                                : 'Enter the details of the food product below.'}
-                        </p>
+            
+            {showProductForm && (
+                <section className="product-form-panel">
+                    <div className="product-section-heading">
+                        <div className="product-section-icon">＋</div>
+                        <div>
+                            <h2>{editingId ? 'Edit Product' : 'Add New Product'}</h2>
+                            <p>
+                                {editingId
+                                    ? 'Update the details of this product.'
+                                    : 'Enter the details of the food product below.'}
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="product-form-grid">
-                        <div className="product-field">
-                            <label htmlFor="product-name">Product name *</label>
-                            <input
-                                id="product-name"
-                                name="name"
-                                value={form.name}
-                                onChange={handleChange}
-                                placeholder="e.g. Canned Sardines"
-                                maxLength={255}
-                                required
-                            />
+                    <form onSubmit={handleSubmit}>
+                        <div className="product-form-grid">
+                            <div className="product-field">
+                                <label htmlFor="product-name">Product name *</label>
+                                <input
+                                    id="product-name"
+                                    name="name"
+                                    value={form.name}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Canned Sardines"
+                                    maxLength={255}
+                                    required
+                                />
+                            </div>
+
+                            <div className="product-field">
+                                <label htmlFor="product-category">Category *</label>
+                                <select
+                                    id="product-category"
+                                    name="category"
+                                    value={form.category}
+                                    onChange={handleChange}
+                                    required
+                                >
+                                    <option value="">Select category</option>
+                                    {CATEGORIES.map((category) => (
+                                        <option key={category} value={category}>
+                                            {category}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="product-field">
+                                <label htmlFor="product-price">Price (₱) *</label>
+                                <input
+                                    id="product-price"
+                                    name="price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={form.price}
+                                    onChange={handleChange}
+                                    placeholder="0.00"
+                                    required
+                                />
+                            </div>
+
+                            <div className="product-field">
+                                <label htmlFor="product-stock">Stock quantity *</label>
+                                <input
+                                    id="product-stock"
+                                    name="stock_quantity"
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={form.stock_quantity}
+                                    onChange={handleChange}
+                                    placeholder="Enter quantity"
+                                    required
+                                />
+                            </div>
+
+                            <div className="product-field product-field-full">
+                                <label htmlFor="product-description">Description</label>
+                                <textarea
+                                    id="product-description"
+                                    name="description"
+                                    value={form.description}
+                                    onChange={handleChange}
+                                    placeholder="Optional product description"
+                                    rows="3"
+                                />
+                            </div>
                         </div>
 
-                        <div className="product-field">
-                            <label htmlFor="product-category">Category *</label>
-                            <select
-                                id="product-category"
-                                name="category"
-                                value={form.category}
-                                onChange={handleChange}
-                                required
+                        <div className="product-form-actions">
+                            <button
+                                type="submit"
+                                className="product-btn product-btn-primary"
+                                disabled={saving}
                             >
-                                <option value="">Select category</option>
-                                {CATEGORIES.map((category) => (
-                                    <option key={category} value={category}>
-                                        {category}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                                {saving
+                                    ? 'Saving...'
+                                    : editingId
+                                        ? '✓ Update Product'
+                                        : '+ Add Product'}
+                            </button>
 
-                        <div className="product-field">
-                            <label htmlFor="product-price">Price (₱) *</label>
-                            <input
-                                id="product-price"
-                                name="price"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={form.price}
-                                onChange={handleChange}
-                                placeholder="0.00"
-                                required
-                            />
-                        </div>
-
-                        <div className="product-field">
-                            <label htmlFor="product-stock">Stock quantity *</label>
-                            <input
-                                id="product-stock"
-                                name="stock_quantity"
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={form.stock_quantity}
-                                onChange={handleChange}
-                                placeholder="Enter quantity"
-                                required
-                            />
-                        </div>
-
-                        <div className="product-field product-field-full">
-                            <label htmlFor="product-description">
-                                Description
-                            </label>
-                            <textarea
-                                id="product-description"
-                                name="description"
-                                value={form.description}
-                                onChange={handleChange}
-                                placeholder="Optional product description"
-                                rows="3"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="product-form-actions">
-                        <button
-                            type="submit"
-                            className="product-btn product-btn-primary"
-                            disabled={saving}
-                        >
-                            {saving
-                                ? 'Saving...'
-                                : editingId
-                                    ? '✓ Update Product'
-                                    : '+ Add Product'}
-                        </button>
-
-                        {editingId && (
                             <button
                                 type="button"
-                                onClick={cancelEdit}
                                 className="product-btn product-btn-secondary"
+                                onClick={cancelEdit}
                                 disabled={saving}
                             >
                                 Cancel
                             </button>
-                        )}
+                        </div>
+                    </form>
+                </section>
+            )}
+
+            {stockProduct && (
+                <section className="product-form-panel">
+                    <div className="product-section-heading">
+                        <div className="product-section-icon">＋</div>
+                        <div>
+                            <h2>Add Stock</h2>
+                            <p>
+                                Add inventory for {stockProduct.name}.
+                                Current stock: {stockProduct.stock_quantity}
+                            </p>
+                        </div>
                     </div>
-                </form>
-            </section>
+
+                    <form onSubmit={handleAddStock}>
+                        <div className="product-form-grid">
+                            <div className="product-field">
+                                <label htmlFor="stock-add-quantity">
+                                    Quantity to add *
+                                </label>
+                                <input
+                                    id="stock-add-quantity"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    value={stockQuantity}
+                                    onChange={(e) => setStockQuantity(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <div className="product-field">
+                                <label htmlFor="stock-add-notes">Notes</label>
+                                <input
+                                    id="stock-add-notes"
+                                    value={stockNotes}
+                                    onChange={(e) => setStockNotes(e.target.value)}
+                                    maxLength="500"
+                                    placeholder="e.g. New delivery"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="product-form-actions">
+                            <button
+                                type="submit"
+                                className="product-btn product-btn-primary"
+                                disabled={addingStock}
+                            >
+                                {addingStock ? 'Adding...' : '+ Confirm Add Stock'}
+                            </button>
+
+                            <button
+                                type="button"
+                                className="product-btn product-btn-secondary"
+                                onClick={() => setStockProduct(null)}
+                                disabled={addingStock}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            )}
+
 
             <section className="product-list-panel">
                 <div className="product-list-heading">
@@ -542,6 +776,14 @@ function ProductManagement() {
                                                     </button>
                                                     <button
                                                         type="button"
+                                                        className="product-action-edit"
+                                                        onClick={() => openAddStock(product)}
+                                                        >
+    + Add Stock
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
                                                         className="product-action-delete"
                                                         onClick={() => handleDelete(product.id)}
                                                     >
@@ -557,8 +799,108 @@ function ProductManagement() {
                     </div>
                 )}
             </section>
+            <section className="product-list-panel">
+    <div className="product-section-heading">
+        <div className="product-section-icon">◷</div>
+        <div>
+            <h2>Activity History</h2>
+            <p>Audit trail for inventory and sales activities.</p>
+        </div>
+    </div>
+
+    <div className="product-form-grid">
+        <div className="product-field">
+            <label htmlFor="activity-search">Search history</label>
+            <input
+                id="activity-search"
+                value={activitySearch}
+                onChange={(e) => setActivitySearch(e.target.value)}
+                placeholder="Search product name..."
+            />
+        </div>
+
+        <div className="product-field">
+            <label htmlFor="activity-action">Filter by action</label>
+            <select
+                id="activity-action"
+                value={activityAction}
+                onChange={(e) => setActivityAction(e.target.value)}
+            >
+                <option value="">All activities</option>
+                <option value="product_created">Product Created</option>
+                <option value="product_updated">Product Updated</option>
+                <option value="product_deleted">Product Deleted</option>
+                <option value="stock_added">Stock Added</option>
+                <option value="sale_recorded">Sale Recorded</option>
+            </select>
+        </div>
+    </div>
+
+    {activityLoading && <p>Loading activity history...</p>}
+
+    {activityError && (
+        <p role="alert" className="product-error">
+            {activityError}
+        </p>
+    )}
+
+    {!activityLoading && !activityError && (
+        <div className="product-table-wrapper">
+            <table className="product-table">
+                <thead>
+                    <tr>
+                        <th>Date &amp; Time</th>
+                        <th>Action</th>
+                        <th>Product</th>
+                        <th>Details</th>
+                        <th>Changes</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {(activityLogs.data || []).length === 0 ? (
+                        <tr>
+                            <td colSpan="5">No activity records found.</td>
+                        </tr>
+                    ) : (
+                        activityLogs.data.map((log) => (
+                            <tr key={log.id}>
+                                <td>
+                                    {new Date(log.created_at).toLocaleString()}
+                                </td>
+                                <td>{log.action.replaceAll('_', ' ')}</td>
+                                <td>{log.entity_name || '—'}</td>
+                                <td>{log.details || '—'}</td>
+                                <td>
+                                    {log.old_values || log.new_values ? (
+                                        
+                                    <td>
+                                        <details>
+                                            <summary>View Changes</summary>
+                                            <ol className="activity-change-list">
+                                                {formatActivityChanges(log).map((change, index) => (
+                                                    <li key={`${log.id}-${index}`}>{change}</li>
+                                                ))}
+                                                <li>
+                                                    Date: {new Date(log.created_at).toLocaleString()}
+                                                </li>
+                                            </ol>
+                                        </details>
+                                    </td>
+
+                                    ) : (
+                                        '—'
+                                    )}
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+        </div>
+    )}
+</section>
         </main>
     );
 }
-
 export default ProductManagement;

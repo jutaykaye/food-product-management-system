@@ -1787,3 +1787,271 @@ tbody tr:hover {
         min-width: 850px;
     }
 }
+
+
+.sales-page {
+    padding: 24px;
+    color: #1f2937;
+}
+
+.sales-page h1 {
+    margin-bottom: 6px;
+}
+
+.sales-page > p {
+    color: #6b7280;
+    margin-bottom: 24px;
+}
+
+.sales-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.sales-card,
+.sales-form,
+.sales-history {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.sales-card h3 {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.sales-card p {
+    color: #166534;
+    font-size: 26px;
+    font-weight: 700;
+    margin: 10px 0 0;
+}
+
+.sales-form {
+    max-width: 600px;
+}
+
+.sales-form label {
+    display: block;
+    font-weight: 600;
+    margin: 16px 0 8px;
+}
+
+.sales-form input,
+.sales-form select {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.sales-form button {
+    margin-top: 16px;
+    padding: 12px 20px;
+    background: #166534;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.sales-form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.sales-success {
+    color: #166534;
+}
+
+.sales-error {
+    color: #dc2626;
+}
+
+.sales-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.sales-history table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.sales-history th,
+.sales-history td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    white-space: nowrap;
+}
+
+
+.activity-change-list {
+    margin: 8px 0 0;
+    padding-left: 22px;
+    line-height: 1.8;
+    min-width: 220px;
+}
+
+.activity-change-list li {
+    padding-left: 3px;
+    overflow-wrap: anywhere;
+}
+
+
+/* Register and authentication page */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    background: #f5f7f4;
+    box-sizing: border-box;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    padding: 32px;
+    background: #ffffff;
+    border: 1px solid #e0e7df;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(24, 60, 43, 0.08);
+    box-sizing: border-box;
+}
+
+.auth-brand {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.auth-brand .brand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 12px;
+    border-radius: 14px;
+    background: #214d3a;
+    color: #ffffff;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.auth-brand h1 {
+    margin: 0 0 6px;
+    color: #214d3a;
+    font-size: 26px;
+}
+
+.auth-brand p {
+    margin: 0;
+    color: #68766d;
+    font-size: 14px;
+}
+
+.auth-card h2 {
+    margin: 0 0 22px;
+    color: #1f3026;
+    font-size: 22px;
+}
+
+.auth-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.auth-card label {
+    margin-top: 8px;
+    color: #263b2f;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.auth-card input {
+    width: 100%;
+    min-height: 44px;
+    padding: 11px 12px;
+    border: 1px solid #d5ded6;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #1f3026;
+    font: inherit;
+    box-sizing: border-box;
+}
+
+.auth-card input:focus {
+    outline: 2px solid #a9cbb5;
+    border-color: #286544;
+}
+
+.auth-card form button {
+    min-height: 46px;
+    margin-top: 16px;
+    border: none;
+    border-radius: 8px;
+    background: #214d3a;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.auth-card form button:hover {
+    background: #2c694d;
+}
+
+.auth-card form button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.auth-switch {
+    margin: 22px 0 0;
+    color: #647168;
+    text-align: center;
+    font-size: 14px;
+}
+
+.auth-switch button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #216541;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-error,
+.auth-success {
+    margin: 0 0 16px;
+    padding: 11px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.auth-error {
+    background: #fff0ef;
+    color: #a52d27;
+}
+
+.auth-success {
+    background: #eaf6ed;
+    color: #216541;
+}
+
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 24px 20px;
+    }
+}

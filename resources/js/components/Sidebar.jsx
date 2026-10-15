@@ -4,7 +4,9 @@ import React from 'react';
 const menuItems = [
     { label: 'Dashboard', icon: '▦', page: 'dashboard' },
     { label: 'Product Management', icon: '▤', page: 'products' },
+    { label: 'Sales Management', icon: '₱', page: 'sales' },
 ];
+
 
 export default function Sidebar({
     activePage = 'dashboard',
