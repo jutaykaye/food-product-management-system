@@ -1,9 +1,13 @@
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ProductManagement from './pages/ProductManagement';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import '../css/app.css';
 
 function App() {
     const [isLoggedIn, setIsLoggedIn] = React.useState(
@@ -11,6 +15,7 @@ function App() {
     );
 
     const [currentPage, setCurrentPage] = React.useState('dashboard');
+    const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
     const user = React.useMemo(() => {
         try {
@@ -43,6 +48,7 @@ function App() {
             localStorage.removeItem('auth_user');
             setIsLoggedIn(false);
             setCurrentPage('dashboard');
+            setMobileMenuOpen(false);
         }
     }
 
@@ -51,21 +57,33 @@ function App() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <Navbar
-                currentPage={currentPage}
+        <div className="app-layout">
+            <Sidebar
+                activePage={currentPage}
                 onNavigate={setCurrentPage}
-                onLogout={handleLogout}
-                user={user}
+                mobileOpen={mobileMenuOpen}
+                onClose={() => setMobileMenuOpen(false)}
             />
 
-            {currentPage === 'dashboard' && (
-                <Dashboard onLogout={handleLogout} />
-            )}
+            <div className="app-main">
+                <Navbar
+                    currentPage={currentPage}
+                    onNavigate={setCurrentPage}
+                    onLogout={handleLogout}
+                    user={user}
+                    onMenuClick={() => setMobileMenuOpen((open) => !open)}
+                />
 
-            {currentPage === 'products' && (
-                <ProductManagement />
-            )}
+                <main className="app-content">
+                    {currentPage === 'dashboard' && (
+                        <Dashboard onLogout={handleLogout} />
+                    )}
+
+                    {currentPage === 'products' && (
+                        <ProductManagement />
+                    )}
+                </main>
+            </div>
         </div>
     );
 }

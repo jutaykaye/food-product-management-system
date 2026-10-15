@@ -1,45 +1,62 @@
 
 import React from 'react';
 
-function Navbar({ currentPage, onNavigate, onLogout, user }) {
-    const links = [
-        { id: 'dashboard', label: 'Dashboard' },
-        { id: 'products', label: 'Product Management' },
-    ];
+function Navbar({ currentPage, onLogout, user, onMenuClick }) {
+    const pageTitle =
+        currentPage === 'products'
+            ? 'Product Management'
+            : 'Dashboard';
 
     return (
-        <nav className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 px-6 py-4 text-white shadow">
-            <h1 className="text-xl font-bold">
-                Food Product Management
-            </h1>
+        <header className="app-navbar">
+            <div className="navbar-left">
+                <button
+                    type="button"
+                    className="mobile-menu-button"
+                    onClick={onMenuClick}
+                    aria-label="Open navigation menu"
+                >
+                    <span />
+                    <span />
+                    <span />
+                </button>
 
-            <div className="flex flex-wrap items-center gap-3">
-                {links.map((link) => (
-                    <button
-                        key={link.id}
-                        onClick={() => onNavigate(link.id)}
-                        className={`rounded px-4 py-2 ${
-                            currentPage === link.id
-                                ? 'bg-blue-600'
-                                : 'hover:bg-slate-700'
-                        }`}
-                    >
-                        {link.label}
-                    </button>
-                ))}
+                <div className="navbar-page-info">
+                    <span className="navbar-eyebrow">
+                        FOOD PRODUCT MANAGEMENT
+                    </span>
+                    <h1>{pageTitle}</h1>
+                </div>
+            </div>
 
-                <span className="text-sm text-slate-300">
-                    {user?.name || 'User'}
-                </span>
+            <div className="navbar-right">
+                <div className="navbar-user">
+                    <div className="navbar-avatar">
+                        {(user?.name || 'User')
+                            .trim()
+                            .charAt(0)
+                            .toUpperCase()}
+                    </div>
+
+                    <div className="navbar-user-details">
+                        <span className="navbar-user-label">
+                            Signed in as
+                        </span>
+                        <strong className="navbar-user-name">
+                            {user?.name || 'User'}
+                        </strong>
+                    </div>
+                </div>
 
                 <button
+                    type="button"
+                    className="navbar-logout"
                     onClick={onLogout}
-                    className="rounded bg-red-600 px-4 py-2 hover:bg-red-700"
                 >
-                    Logout
+                    Log out
                 </button>
             </div>
-        </nav>
+        </header>
     );
 }
 
